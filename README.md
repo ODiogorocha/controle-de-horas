@@ -22,7 +22,7 @@ O instalador vai:
 
 ### Windows 10 / 11
 
-1. Va na pagina de [Releases](https://github.com/SEU_USUARIO/controle-horas/releases/latest)
+1. Va na pagina de [Releases][(https://github.com/SEU_USUARIO/controle-horas/releases/latest](https://github.com/ODiogorocha/controle-de-horas/blob/main/controle-horas/scripts/instalar-windows.bat)
 2. Baixe o arquivo **instalar-windows.bat**
 3. Clique com o botao direito no arquivo > **Executar como administrador**
 4. Siga as instrucoes na tela
