@@ -8,10 +8,10 @@ title Instalador - Sistema de Controle de Horas
 :: CONFIGURACOES
 :: ============================================================
 
-set "APP_VERSION=1.0.0"
+set "APP_VERSION=1.0.1"
 
 set "GITHUB_USER=ODiogorocha"
-set "GITHUB_REPO=%GITHUB_USER%/controle-horas"
+set "GITHUB_REPO=%GITHUB_USER%/controle-de-horas"
 
 set "INSTALL_DIR=%LOCALAPPDATA%\ControleHoras"
 
@@ -45,22 +45,6 @@ if %ERRORLEVEL% EQU 0 (
     )
 )
 
-:: Procura em diretorios comuns
-if not defined JAVA_EXE (
-    for /d %%i in (
-        "%ProgramFiles%\Eclipse Adoptium\jdk-21*"
-        "%ProgramFiles%\Eclipse Adoptium\jre-21*"
-        "%ProgramFiles%\Java\jdk*"
-        "%ProgramFiles%\Java\jre*"
-    ) do (
-        if exist "%%i\bin\javaw.exe" (
-            if not defined JAVA_EXE (
-                set "JAVA_EXE=%%i\bin\javaw.exe"
-            )
-        )
-    )
-)
-
 if not defined JAVA_EXE (
     echo.
     echo [ERRO] Java nao encontrado.
@@ -86,8 +70,7 @@ if not exist "%INSTALL_DIR%" (
     mkdir "%INSTALL_DIR%"
 )
 
-echo [OK] Pasta criada:
-echo      %INSTALL_DIR%
+echo [OK] Pasta criada.
 
 :: ============================================================
 :: 3. BAIXA JAR
@@ -104,16 +87,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
 if not exist "%JAR_PATH%" (
     echo.
     echo [ERRO] Falha ao baixar o sistema.
-    pause
-    exit /b 1
-)
-
-for %%A in ("%JAR_PATH%") do set JAR_SIZE=%%~zA
-
-if %JAR_SIZE% LSS 1000 (
-    echo.
-    echo [ERRO] JAR invalido.
-    del "%JAR_PATH%"
     pause
     exit /b 1
 )
@@ -139,7 +112,7 @@ if exist "%ICON_PATH%" (
 )
 
 :: ============================================================
-:: 5. CRIA LAUNCHER VBS
+:: 5. CRIA LAUNCHER
 :: ============================================================
 
 echo.
@@ -184,34 +157,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   $s.Save()"
 
 echo [OK] Atalhos criados.
-
-:: ============================================================
-:: DESINSTALADOR
-:: ============================================================
-
-set "UNINSTALL=%INSTALL_DIR%\desinstalar.bat"
-
-(
-echo @echo off
-echo echo Desinstalando...
-echo del "%DESKTOP%\Controle de Horas.lnk" 2^>nul
-echo del "%STARTMENU%\Controle de Horas.lnk" 2^>nul
-echo rmdir /s /q "%INSTALL_DIR%"
-echo echo Desinstalado com sucesso.
-echo pause
-) > "%UNINSTALL%"
-
-:: ============================================================
-:: REGISTRA DESINSTALADOR
-:: ============================================================
-
-set "REG=HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\ControleHoras"
-
-reg add "%REG%" /v "DisplayName" /t REG_SZ /d "Controle de Horas" /f >nul
-reg add "%REG%" /v "DisplayVersion" /t REG_SZ /d "%APP_VERSION%" /f >nul
-reg add "%REG%" /v "Publisher" /t REG_SZ /d "ODiogorocha" /f >nul
-reg add "%REG%" /v "InstallLocation" /t REG_SZ /d "%INSTALL_DIR%" /f >nul
-reg add "%REG%" /v "UninstallString" /t REG_SZ /d "%UNINSTALL%" /f >nul
 
 :: ============================================================
 :: FINAL

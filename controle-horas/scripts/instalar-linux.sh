@@ -6,10 +6,10 @@
 
 set -e
 
-APP_VERSION="1.0.0"
+APP_VERSION="1.0.1"
 
 GITHUB_USER="ODiogorocha"
-GITHUB_REPO="$GITHUB_USER/controle-horas"
+GITHUB_REPO="$GITHUB_USER/controle-de-horas"
 
 INSTALL_DIR="$HOME/.local/share/controle-horas"
 BIN_DIR="$HOME/.local/bin"
@@ -77,6 +77,12 @@ if [ ! -f "$JAR_LOCAL" ]; then
     exit 1
 fi
 
+if [ ! -s "$JAR_LOCAL" ]; then
+    echo ""
+    echo "ERRO: JAR vazio."
+    exit 1
+fi
+
 echo "[OK] Sistema baixado."
 
 # =============================================================
@@ -92,7 +98,11 @@ else
     curl -L -o "$ICON_LOCAL" "$ICON_URL"
 fi
 
-echo "[OK] Icone baixado."
+if [ -f "$ICON_LOCAL" ]; then
+    echo "[OK] Icone baixado."
+else
+    echo "[AVISO] Icone nao encontrado."
+fi
 
 # =============================================================
 # 5. SCRIPT DE EXECUCAO
