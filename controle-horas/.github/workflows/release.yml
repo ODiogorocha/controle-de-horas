@@ -5,102 +5,63 @@ on:
     tags:
       - 'v*'
 
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
 jobs:
 
-  windows:
-
-    name: Gerar EXE Windows
+  build-windows:
     runs-on: windows-latest
 
-    steps:
+    permissions:
+      contents: write
 
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Instalar Java 21
+      - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Build EXE
-        run: .\gradlew.bat clean buildWindowsExe
-
-      - name: Upload Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/*.exe
-            scripts/instalar-windows.bat
-            scripts/controle-horas.ico
-
-  linux:
-
-    name: Gerar Linux
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Instalar Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - name: Dar permissao Gradle
-        run: chmod +x gradlew
-
-      - name: Build Linux
-        run: ./gradlew clean buildLinuxApp
-
-      - name: Compactar Linux
-        run: tar -czf controle-horas-linux.tar.gz dist/
-
-      - name: Upload Linux
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            controle-horas-linux.tar.gz
-            scripts/instalar-linux.sh
-            scripts/desinstalar-linux.sh
-            scripts/controle-horas.png
-
-  jar:
-
-    name: Gerar JAR
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Instalar Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-
-      - name: Dar permissao Gradle
+      - name: Permitir Gradle
         run: chmod +x gradlew
 
       - name: Gerar JAR
         run: ./gradlew clean bootJar
 
       - name: Renomear JAR
+        shell: bash
         run: |
           cp build/libs/*.jar build/libs/controle-horas.jar
 
-      - name: Upload JAR
+      - name: Instalar jpackage
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Criar EXE
+        shell: bash
+        run: |
+          mkdir dist
+
+          jpackage \
+            --type exe \
+            --name "ControleHoras" \
+            --input build/libs \
+            --main-jar controle-horas.jar \
+            --main-class com.empresa.controle_horas.ControleHorasApplication \
+            --dest dist \
+            --icon scripts/controle-horas.ico \
+            --win-shortcut \
+            --win-menu
+
+      - name: Criar Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            dist/*.exe
             build/libs/controle-horas.jar
+            scripts/instalar-linux.sh
+            scripts/desinstalar-linux.sh
+            scripts/instalar-windows.bat
