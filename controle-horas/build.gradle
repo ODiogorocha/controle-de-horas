@@ -1,26 +1,26 @@
 plugins {
 	id 'java'
+	id 'application'
+
 	id 'org.springframework.boot' version '3.2.0'
 	id 'io.spring.dependency-management' version '1.1.4'
 	id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
 group = 'com.empresa'
-version = '1.0.0'
+version = '1.0.1'
+
+repositories {
+	mavenCentral()
+}
 
 java {
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
 }
 
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-}
-
-repositories {
-	mavenCentral()
+application {
+	mainClass = 'com.empresa.controle_horas.ControleHorasApplication'
 }
 
 javafx {
@@ -35,26 +35,16 @@ javafx {
 
 dependencies {
 
-	// Spring Boot
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
-	// Banco
 	runtimeOnly 'com.h2database:h2'
 
-	// CSV
 	implementation 'com.opencsv:opencsv:5.8'
 
-	// Lombok
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
-	// JavaFX
-	implementation 'org.openjfx:javafx-controls:21'
-	implementation 'org.openjfx:javafx-fxml:21'
-	implementation 'org.openjfx:javafx-graphics:21'
-
-	// Testes
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
@@ -62,12 +52,37 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-tasks.named("bootJar") {
+bootJar {
 	archiveFileName = "controle-horas.jar"
 }
 
-bootRun {
-	jvmArgs = [
-			'--add-modules=javafx.controls,javafx.fxml,javafx.graphics'
-	]
+task buildWindowsExe(type: Exec) {
+
+	dependsOn bootJar
+
+	commandLine 'jpackage',
+			'--type', 'exe',
+			'--name', 'ControleHoras',
+			'--input', 'build/libs',
+			'--main-jar', 'controle-horas.jar',
+			'--main-class', 'com.empresa.controle_horas.ControleHorasApplication',
+			'--dest', 'dist',
+			'--win-dir-chooser',
+			'--win-menu',
+			'--win-shortcut',
+			'--icon', 'scripts/controle-horas.ico'
+}
+
+task buildLinuxApp(type: Exec) {
+
+	dependsOn bootJar
+
+	commandLine 'jpackage',
+			'--type', 'app-image',
+			'--name', 'controle-horas',
+			'--input', 'build/libs',
+			'--main-jar', 'controle-horas.jar',
+			'--main-class', 'com.empresa.controle_horas.ControleHorasApplication',
+			'--dest', 'dist',
+			'--icon', 'scripts/controle-horas.png'
 }
