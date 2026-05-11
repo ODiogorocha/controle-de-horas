@@ -184,4 +184,4 @@ MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
 2. Crie uma branch: `git checkout -b minha-melhoria`
 3. Commit suas mudancas: `git commit -m 'Adiciona funcionalidade X'`
 4. Push: `git push origin minha-melhoria`
-5. Abra um Pull Request
+5. Abra um Pull Request# trigger
