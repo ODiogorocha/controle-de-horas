@@ -12,10 +12,6 @@ permissions:
 
 jobs:
 
-  # ============================================================
-  # WINDOWS
-  # ============================================================
-
   windows:
 
     name: Gerar EXE Windows
@@ -32,17 +28,10 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Dar permissao gradle
-        run: chmod +x gradlew
-        shell: bash
-
       - name: Build EXE
         run: .\gradlew.bat clean buildWindowsExe
 
-      - name: Listar arquivos
-        run: dir dist
-
-      - name: Upload EXE Release
+      - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -50,13 +39,9 @@ jobs:
             scripts/instalar-windows.bat
             scripts/controle-horas.ico
 
-  # ============================================================
-  # LINUX
-  # ============================================================
-
   linux:
 
-    name: Gerar App Linux
+    name: Gerar Linux
     runs-on: ubuntu-latest
 
     steps:
@@ -70,7 +55,7 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Permissao gradle
+      - name: Dar permissao Gradle
         run: chmod +x gradlew
 
       - name: Build Linux
@@ -79,7 +64,7 @@ jobs:
       - name: Compactar Linux
         run: tar -czf controle-horas-linux.tar.gz dist/
 
-      - name: Upload Linux Release
+      - name: Upload Linux
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -87,10 +72,6 @@ jobs:
             scripts/instalar-linux.sh
             scripts/desinstalar-linux.sh
             scripts/controle-horas.png
-
-  # ============================================================
-  # JAR
-  # ============================================================
 
   jar:
 
@@ -102,13 +83,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Java 21
+      - name: Instalar Java 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - name: Permissao Gradle
+      - name: Dar permissao Gradle
         run: chmod +x gradlew
 
       - name: Gerar JAR
