@@ -45,21 +45,21 @@ bootJar {
 
 // Configuracao do launch4j para gerar o .exe
 launch4j {
-	outfile         = 'ControleDeHoras.exe'
-	jar             = "${buildDir}/libs/controle-horas.jar"
-	outputDir       = 'dist'
-	mainClassName   = 'com.empresa.controle_horas.ControleHorasApplication'
-	jreMinVersion   = '17'
-	downloadUrl     = 'https://adoptium.net'
-	supportUrl      = 'https://github.com/ODiogorocha/controle-horas'
-	fileDescription = 'Sistema de Controle de Horas e Ponto'
-	productName     = 'Controle de Horas'
-	companyName     = 'ODiogorocha'
-	copyright       = '2025 ODiogorocha'
-	productVersion  = '1.0.0.0'
-	fileVersion     = '1.0.0.0'
-	headerType      = 'gui'
-	jvmOptions      = ['-Xms256m', '-Xmx512m', '-Dfile.encoding=UTF-8']
+	mainClassName = 'com.empresa.controle_horas.ControleHorasApplication'
+	outfile = 'ControleDeHoras.exe'
+	jarTask = tasks.bootJar
+
+	icon = "${projectDir}/scripts/controle-horas.ico"
+
+	jreMinVersion = '21'
+
+	bundledJrePath = '%JAVA_HOME%'
+
+	windowTitle = 'Controle de Horas'
+
+	companyName = 'ODiogorocha'
+
+	productName = 'Controle de Horas'
 }
 
 // O JAR precisa existir antes de gerar o EXE
