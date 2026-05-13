@@ -4,64 +4,169 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
 
-  build-windows:
-    runs-on: windows-latest
-
-    permissions:
-      contents: write
+  # ── Gera o JAR ───────────────────────────────────────────────
+  build-jar:
+    name: Gerar JAR
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Baixar codigo
         uses: actions/checkout@v4
 
       - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
+          distribution: 'temurin'
+          java-version: '21'
 
-      - name: Permitir Gradle
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/controle-horas/*.gradle*') }}
+          restore-keys: gradle-
+
+      - name: Permissao ao Gradle
+        working-directory: controle-horas
         run: chmod +x gradlew
 
       - name: Gerar JAR
-        run: ./gradlew clean bootJar
+        working-directory: controle-horas
+        run: ./gradlew bootJar
 
-      - name: Renomear JAR
-        shell: bash
-        run: |
-          cp build/libs/*.jar build/libs/controle-horas.jar
+      - name: Listar arquivos gerados
+        working-directory: controle-horas
+        run: ls -lh build/libs/
 
-      - name: Instalar jpackage
+      - name: Salvar JAR como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: jar-file
+          path: controle-horas/build/libs/controle-horas.jar
+
+  # ── Gera o EXE no Windows ────────────────────────────────────
+  build-exe:
+    name: Gerar EXE para Windows
+    runs-on: windows-latest
+    needs: build-jar
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
+          distribution: 'temurin'
+          java-version: '21'
 
-      - name: Criar EXE
-        shell: bash
-        run: |
-          mkdir dist
-
-          jpackage \
-            --type exe \
-            --name "ControleHoras" \
-            --input build/libs \
-            --main-jar controle-horas.jar \
-            --main-class com.empresa.controle_horas.ControleHorasApplication \
-            --dest dist \
-            --icon scripts/controle-horas.ico \
-            --win-shortcut \
-            --win-menu
-
-      - name: Criar Release
-        uses: softprops/action-gh-release@v2
+      - name: Baixar JAR gerado
+        uses: actions/download-artifact@v4
         with:
+          name: jar-file
+          path: controle-horas/build/libs/
+
+      - name: Verificar JAR
+        working-directory: controle-horas
+        run: dir build\libs\
+        shell: cmd
+
+      - name: Gerar EXE com launch4j
+        working-directory: controle-horas
+        run: ./gradlew createExe
+        shell: cmd
+
+      - name: Verificar EXE gerado
+        working-directory: controle-horas
+        run: dir build\dist\
+        shell: cmd
+
+      - name: Salvar EXE como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: exe-file
+          path: controle-horas/build/dist/ControleDeHoras.exe
+
+  # ── Publica a Release ─────────────────────────────────────────
+  release:
+    name: Publicar Release no GitHub
+    needs: [build-jar, build-exe]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Baixar JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: jar-file
+          path: dist/
+
+      - name: Baixar EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: exe-file
+          path: dist/
+
+      - name: Copiar instalador Linux
+        run: |
+          cp controle-horas/scripts/instalar-linux.sh    dist/
+          cp controle-horas/scripts/desinstalar-linux.sh dist/
+          chmod +x dist/instalar-linux.sh
+          chmod +x dist/desinstalar-linux.sh
+          echo "Arquivos na release:"
+          ls -lh dist/
+
+      - name: Extrair versao da tag
+        id: versao
+        run: echo "versao=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Criar Release com todos os arquivos
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.versao.outputs.versao }}
+          name: "Controle de Horas ${{ steps.versao.outputs.versao }}"
+          body: |
+            ## Sistema de Controle de Horas ${{ steps.versao.outputs.versao }}
+
+            ---
+
+            ## Como instalar
+
+            ### Windows 10 / 11
+            1. Baixe o arquivo **ControleDeHoras.exe** abaixo
+            2. Clique duas vezes para abrir
+            3. Se aparecer aviso do Windows Defender clique em **"Mais informacoes"** depois **"Executar assim mesmo"**
+            4. O Java sera instalado automaticamente se necessario
+
+            ### Linux (Ubuntu, Debian, Fedora, Arch)
+            ```bash
+            curl -sSL https://github.com/ODiogorocha/controle-horas/releases/latest/download/instalar-linux.sh | bash
+            ```
+
+            ---
+
+            ## Funcionalidades
+            - Cadastro de funcionarios e cargos
+            - Escalas de trabalho (Segunda a Sexta, 12x36, 6x2 e outras)
+            - Importacao de ponto via arquivo CSV
+            - Calculo de horas trabalhadas e horas extras
+            - Banco de horas com folgas remuneradas (proporcao 1:1)
+            - Interface grafica desktop
+
           files: |
-            dist/*.exe
-            build/libs/controle-horas.jar
-            scripts/instalar-linux.sh
-            scripts/desinstalar-linux.sh
-            scripts/instalar-windows.bat# update
+            dist/ControleDeHoras.exe
+            dist/controle-horas.jar
+            dist/instalar-linux.sh
+            dist/desinstalar-linux.sh
