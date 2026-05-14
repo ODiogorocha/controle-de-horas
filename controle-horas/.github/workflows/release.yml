@@ -4,25 +4,40 @@ on:
   push:
     tags:
       - 'v*'
+
   workflow_dispatch:
 
 jobs:
 
   build-jar:
+
     name: Gerar JAR
+
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+
       - name: Permissao Gradle
         working-directory: controle-horas
         run: chmod +x gradlew
+
+      - name: Build Projeto
+        working-directory: controle-horas
+        run: ./gradlew clean build
+
       - name: Gerar JAR
         working-directory: controle-horas
         run: ./gradlew bootJar
+
       - name: Salvar JAR
         uses: actions/upload-artifact@v4
         with:
@@ -30,82 +45,129 @@ jobs:
           path: controle-horas/build/libs/controle-horas.jar
 
   build-exe:
-    name: Gerar EXE para Windows
+
+    name: Gerar EXE Windows
+
     runs-on: windows-latest
+
     needs: build-jar
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
-      - name: Baixar JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: jar-file
-          path: controle-horas/build/libs/
-      - name: Criar pasta
+
+      - name: Gerar EXE
+        working-directory: controle-horas
         shell: cmd
-        run: mkdir controle-horas\build\installer
-      - name: Gerar EXE com jpackage
-        shell: cmd
-        run: jpackage --input controle-horas\build\libs --main-jar controle-horas.jar --main-class com.empresa.controle_horas.ControleHorasApplication --name "Controle de Horas" --app-version "1.0.0" --vendor "ODiogorocha" --dest controle-horas\build\installer --type exe --win-dir-chooser --win-menu --win-shortcut
-      - name: Renomear EXE
+        run: gradlew.bat jpackage
+
+      - name: Listar arquivos gerados
         shell: powershell
         run: |
-          $exe = Get-ChildItem "controle-horas\build\installer\*.exe" | Select-Object -First 1
-          Copy-Item $exe.FullName "controle-horas\build\installer\ControleDeHoras-Installer.exe"
+          Get-ChildItem controle-horas\build\jpackage
+
       - name: Salvar EXE
         uses: actions/upload-artifact@v4
         with:
           name: exe-installer
-          path: controle-horas/build/installer/ControleDeHoras-Installer.exe
+          path: controle-horas/build/jpackage/*.exe
 
   release:
+
     name: Publicar Release
-    needs: [build-jar, build-exe]
+
+    needs:
+      - build-jar
+      - build-exe
+
     runs-on: ubuntu-latest
+
     if: startsWith(github.ref, 'refs/tags/')
+
     permissions:
       contents: write
+
     steps:
-      - uses: actions/checkout@v4
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Baixar JAR
         uses: actions/download-artifact@v4
         with:
           name: jar-file
           path: dist/
+
       - name: Baixar EXE
         uses: actions/download-artifact@v4
         with:
           name: exe-installer
           path: dist/
+
       - name: Copiar scripts Linux
         run: |
           cp controle-horas/scripts/instalar-linux.sh dist/
           cp controle-horas/scripts/desinstalar-linux.sh dist/
+
           chmod +x dist/instalar-linux.sh
           chmod +x dist/desinstalar-linux.sh
+
           ls -lh dist/
+
       - name: Criar Release
         uses: softprops/action-gh-release@v1
         with:
+
           name: "Controle de Horas ${{ github.ref_name }}"
+
           body: |
-            ## Como instalar
 
-            ### Windows 10 / 11
-            1. Baixe o arquivo **ControleDeHoras-Installer.exe**
-            2. Clique duas vezes para instalar
-            3. Se aparecer aviso do Windows Defender clique em **"Mais informacoes"** e depois **"Executar assim mesmo"**
-            4. Apos instalar abra pelo Menu Iniciar ou atalho na area de trabalho
+            ## Controle de Horas
 
-            ### Linux
-```bash
+            Sistema desktop para gerenciamento de jornada, banco de horas e escalas.
+
+            ---
+
+            ## Instalacao Windows
+
+            1. Baixe o arquivo:
+               `ControleHoras.exe`
+
+            2. Execute o instalador
+
+            3. Caso o Windows Defender mostre aviso:
+               - Clique em "Mais informacoes"
+               - Depois em "Executar assim mesmo"
+
+            4. O sistema sera instalado automaticamente
+
+            ---
+
+            ## Instalacao Linux
+
+            Execute:
+
+            ```bash
             curl -sSL https://github.com/ODiogorocha/controle-horas/releases/latest/download/instalar-linux.sh | bash
-```
+            ```
+
+            ---
+
+            ## Requisitos
+
+            - Windows 10/11
+            - Linux Ubuntu/Debian
+            - Java incluso no instalador Windows
+
           files: |
-            dist/ControleDeHoras-Installer.exe
-            dist/controle-horas.jar
+            dist/*.exe
+            dist/*.jar
             dist/instalar-linux.sh
             dist/desinstalar-linux.sh
