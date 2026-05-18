@@ -1,5 +1,6 @@
 package com.empresa.controle_horas.ui;
 
+import com.empresa.controle_horas.Ui.EscalaFuncionarioView;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -24,8 +25,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class MainApp extends Application {
+    private EscalaFuncionarioView escalaFuncionarioView;
 
-    private static final String API = "http://localhost:8080/api";
+    private static final String API = "http://localhost:8080";
     private final HttpClient http = HttpClient.newHttpClient();
 
     // Campos Cargos
